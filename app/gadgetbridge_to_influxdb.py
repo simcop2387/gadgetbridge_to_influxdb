@@ -31,8 +31,8 @@ import sys
 import tempfile
 import time
 from webdav3.client import Client
-from influxdb_client import InfluxDBClient, Point
-from influxdb_client.client.write_api import SYNCHRONOUS
+from influxdb import InfluxDBClient
+#from influxdb.client.write_api import SYNCHRONOUS
 
 
 ### Config section
@@ -506,27 +506,34 @@ def write_results(results):
     ''' Open a connection to InfluxDB and write the results in
     '''
 
-    with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as _client:
-        with _client.write_api() as _write_client:
-            # Iterate through the results generating and writing points
-            for row in results:
-                p = Point(INFLUXDB_MEASUREMENT)
-                for tag in row['tags']:
-                    p = p.tag(tag, row['tags'][tag])
-                    
-                for field in row['fields']:
-                    if row['fields'][field] == -1:
-                        continue
-                    
-                    # Skip any special heart_rate values
-                    # utilities/gadgetbridge_to_influxdb#1
-                    if field == "heart_rate" and row['fields'][field] > 253:
-                        continue
-                    
-                    p = p.field(field, row['fields'][field])
-                    
-                p = p.time(row['timestamp'])
-                _write_client.write(INFLUXDB_BUCKET, INFLUXDB_ORG, p)
+    with InfluxDBClient(INFLUXDB_URL, "8086", "", "", INFLUXDB_BUCKET) as _client:
+        # Iterate through the results generating and writing points
+        series = []
+        for row in results:
+            pointValues = {
+                "time": row['timestamp'],
+                "measurement": INFLUXDB_MEASUREMENT,
+                "fields": {},
+                "tags": row['tags']
+            }
+
+            for field in row['fields']:
+                if row['fields'][field] == -1:
+                    continue
+                
+                # Skip any special heart_rate values
+                # utilities/gadgetbridge_to_influxdb#1
+                if field == "heart_rate" and row['fields'][field] > 253:
+                    continue
+                
+                pointValues['fields'][field] = row['fields'][field]
+            
+            print(pointValues)
+            series.append(pointValues)
+
+        _client.write_points(series) 
+
+            #_write_client.write(INFLUXDB_BUCKET, INFLUXDB_ORG, p)
                 
     
 
