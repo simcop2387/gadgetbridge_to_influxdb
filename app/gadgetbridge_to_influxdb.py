@@ -127,7 +127,7 @@ def extract_data(cur):
         devices[f"dev-{r[0]}"] = r[1]
 
     # Get SpO2 info
-    spo2_data_query = ("SELECT TIMESTAMP, DEVICE_ID, TYPE_NUM, SPO2 FROM HUAMI_SPO2_SAMPLE "
+    spo2_data_query = ("SELECT TIMESTAMP, DEVICE_ID, TYPE_NUM, SPO2 FROM COLMI_SPO2_SAMPLE "
         f"WHERE TIMESTAMP >= {query_start_bound_ms} "
         "ORDER BY TIMESTAMP ASC")
 
@@ -152,7 +152,7 @@ def extract_data(cur):
         # Get the next timestamp, so we can chart how long the watch believed that 
         # stress level lasted
         "LEAD (TIMESTAMP, 1) OVER (PARTITION BY DEVICE_ID, USER_ID, TYPE_NUM ORDER BY TIMESTAMP) NEXT_TS "
-        "FROM HUAMI_STRESS_SAMPLE "
+        "FROM COLMI_STRESS_SAMPLE "
         f"WHERE TIMESTAMP >= {query_start_bound_ms} "
         "ORDER BY TIMESTAMP ASC")
     res = cur.execute(stress_data_query)
@@ -304,9 +304,7 @@ def extract_data(cur):
 
     # Heart rates are spread across tables, depending on the sampling types
     rate_types = {
-        "manual" : "HUAMI_HEART_RATE_MANUAL_SAMPLE",
-        "max" : "HUAMI_HEART_RATE_MAX_SAMPLE",
-        "resting" : "HUAMI_HEART_RATE_RESTING_SAMPLE"
+        "avg" : "COLMI_HEART_RATE_SAMPLE",
         }
     
     for rate_type in rate_types:
